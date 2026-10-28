@@ -11,19 +11,14 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Štempl">
-<link rel="preload" href="fonts/inter-400.woff" as="font" type="font/woff" crossorigin>
-<link rel="preload" href="fonts/interdisplay-800.woff" as="font" type="font/woff" crossorigin>
 <style>
-/* Fonts are served from this site (no Google Fonts → no visitor data sent to third parties) */
-@font-face{font-family:"Inter";src:url(fonts/inter-400.woff) format("woff");font-weight:400;font-display:swap}
-@font-face{font-family:"Inter";src:url(fonts/inter-600.woff) format("woff");font-weight:500 700;font-display:swap}
-@font-face{font-family:"Inter Display";src:url(fonts/interdisplay-800.woff) format("woff");font-weight:800;font-display:swap}
+/* System fonts only: nothing is downloaded from font services, so no visitor data goes to third parties */
 /* Layout: paper loyalty card on a warm counter; rubber-stamp marks are the only ornament; the business accent colours each stamp */
 :root{
   --paper:#f4efe6; --card:#fffdf8; --ink:#1c1a17; --muted:#6e675d; --line:rgba(28,26,23,.12);
   --brand:#d9480f; --ok:#2f7d4f; --warn:#b45309; --bad:#b42318; --accent:var(--brand);
-  --display:"Inter Display","Inter","Helvetica Neue",Arial,sans-serif;
-  --body:"Inter","Helvetica Neue",Arial,sans-serif;
+  --display:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   color-scheme:light;
 }
@@ -53,7 +48,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;border:1.5px solid var(--ink);background:transparent;font-weight:600;text-decoration:none;cursor:pointer;transition:transform .15s,background .2s,color .2s;text-align:center}
 .btn:active{transform:scale(.98)}
 .btn.primary{background:var(--ink);color:var(--paper)}
-.btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}
 .btn.ghost{border-color:var(--line)}
 .btn.danger{border-color:rgba(180,35,24,.35);color:var(--bad)}
 .btn.big{min-height:64px;font-size:1.15rem;border-radius:18px;width:100%}
@@ -91,8 +86,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .lcard::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:var(--accent)}
 .lcard .biz{font:800 1.6rem/1.05 var(--display);letter-spacing:-.02em;margin-top:6px}
 .lcard .rw{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:6px 0 18px}
-.lcard .rw b{color:var(--accent)}
-.ready{margin-top:16px;padding:14px 16px;border-radius:16px;background:var(--accent);color:#fff;font-weight:600;display:flex;gap:10px;align-items:center}
+.lcard .rw b{color:var(--accent-ink,var(--accent))}
+.ready{margin-top:16px;padding:14px 16px;border-radius:16px;background:var(--accent);color:var(--on-accent,#fff);font-weight:600;display:flex;gap:10px;align-items:center}
 .qrbig{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line);display:grid;justify-items:center;gap:10px;text-align:center}
 .qr{background:#fff;border-radius:14px;padding:8px;border:1px solid var(--line)}
 .qr svg{width:100%;height:100%;display:block}
@@ -242,7 +237,9 @@ const ERR={
   terms_required:"Je potřeba souhlasit s podmínkami.", bad_slug:"Adresa může mít 3–40 znaků: malá písmena, čísla a pomlčky.", bad_name:"Vyplňte název podniku.",
   bad_reward:"Vyplňte odměnu.", bad_needed:"Počet razítek musí být 3 až 30.", bad_token:"Odkaz je neplatný nebo už vypršel.", already_confirmed:"Registrace už je potvrzená. Přihlaste se v Přehledu.",
   expired:"Odkaz vypršel. Zaregistrujte se prosím znovu.", mail_not_configured:"Odesílání e-mailů zatím není zapnuté. Napište nám prosím na "+PROVIDER.email+".",
-  server_error:"Na serveru se něco pokazilo. Zkuste to prosím znovu.", bad_days:"Neplatný počet dní.", no_payment:"Platba nenalezena."
+  server_error:"Na serveru se něco pokazilo. Zkuste to prosím znovu.", card_exists:"Na tento e-mail už u nás kartu máte.",
+  query_too_short:"Napište aspoň 2 znaky.", bad_count:"Najednou jde přidat 1 až 5 razítek.", mail_failed:"E-mail se nepodařilo odeslat. Zkontrolujte adresu a zkuste to znovu.",
+  confirm_mismatch:"Pro potvrzení napište přesně adresu podniku.", bad_days:"Neplatný počet dní.", no_payment:"Platba nenalezena."
 };
 const say=e=>ERR[e&&e.message]||ERR[(e&&e.message||"").split(" ")[0]]||("Něco se nepovedlo ("+(e&&e.message||"chyba")+").");
 
@@ -279,7 +276,14 @@ const visits=n=>n+" "+plural(n,"návštěva","návštěvy","návštěv");
 const fmtD=v=>v?new Date(v).toLocaleDateString("cs-CZ",{day:"numeric",month:"numeric",year:"numeric"}):"–";
 const fmtDT=v=>v?new Date(v).toLocaleDateString("cs-CZ",{day:"numeric",month:"numeric"})+" "+new Date(v).toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"}):"–";
 const kc=n=>n.toLocaleString("cs-CZ")+" Kč";
-function setAccent(el,hex){ if(el&&/^#[0-9a-f]{6}$/i.test(hex||"")) el.style.setProperty("--accent",hex); }
+function lum(hex){ const c=[1,3,5].map(i=>{ const v=parseInt(hex.substr(i,2),16)/255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; }
+function darken(hex,f){ return "#"+[1,3,5].map(i=>Math.round(parseInt(hex.substr(i,2),16)*f).toString(16).padStart(2,"0")).join(""); }
+/* light brand colours (yellow, pastel) get dark text and a darker ink for stamps, so everything stays readable */
+function setAccent(el,hex){
+  if(!el||!/^#[0-9a-f]{6}$/i.test(hex||"")) return;
+  const L=lum(hex); let ink=hex; for(let f=.85;lum(ink)>.18&&f>.2;f-=.1) ink=darken(hex,f);
+  el.style.setProperty("--accent",hex); el.style.setProperty("--accent-ink",ink); el.style.setProperty("--on-accent",L>.45?"#1c1a17":"#fff");
+}
 function slugify(s){ return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40); }
 function qrSVG(text){
   if(!window.StemplQR) return '<div class="small muted" style="padding:8px">QR se nenačetl. Použijte kód karty.</div>';
@@ -289,7 +293,7 @@ function qrSVG(text){
 }
 function slotSVG(i,filled,needed,isNew){
   const rot=((i*47)%26)-13;
-  if(filled) return `<svg class="slot${isNew?" new":""}" viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${rot} 50 50)" filter="url(#ink)" style="color:var(--accent)"><circle cx="50" cy="50" r="41" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" stroke-width="2"/><path d="M33 52l12 12 23-25" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
+  if(filled) return `<svg class="slot${isNew?" new":""}" viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${rot} 50 50)" filter="url(#ink)" style="color:var(--accent-ink,var(--accent))"><circle cx="50" cy="50" r="41" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" stroke-width="2"/><path d="M33 52l12 12 23-25" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
   const last=i===needed-1;
   return `<svg class="slot" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 7" opacity=".3"/>${last?'<path d="M50 31l5.6 11.6 12.8 1.8-9.3 9 2.2 12.7L50 60l-11.3 6.1 2.2-12.7-9.3-9 12.8-1.8z" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".45" stroke-linejoin="round"/>':`<text class="num" x="50" y="58" text-anchor="middle">${i+1}</text>`}</svg>`;
 }
@@ -320,13 +324,17 @@ if(!store.get("cookieok",false)){ $("#cbar").hidden=false; document.body.classLi
 $("#cbarOk").addEventListener("click",()=>{ store.set("cookieok",true); $("#cbar").hidden=true; document.body.classList.remove("hasbar"); });
 
 /* ---------- router ---------- */
-let cleanup=[];
+let cleanup=[], routeSeq=0;
 function onLeave(fn){ cleanup.push(fn); }
+/* async screens check this after loading, so a slow answer never paints over a screen the user already moved to */
+const stale=my=>my!==routeSeq;
 function route(){
+  routeSeq++;
   cleanup.forEach(f=>{try{f()}catch(e){}}); cleanup=[]; closeSheet();
   const h=decodeURIComponent(location.hash.replace(/^#\/?/,"")).split("/");
   window.scrollTo(0,0); document.title="Štempl";
   const ss=sess.get(), cta=$("#topCta");
+  cta.hidden=["k","c","moje","obnovit"].includes(h[0])||(h[0]==="r"&&!ss);
   if(ss){ cta.href=ss.role==="owner"?"#/prehled":"#/obsluha"; cta.textContent=ss.role==="owner"?"Přehled":"Obsluha"; } else { cta.href="#/registrace"; cta.textContent="Vyzkoušet zdarma"; }
   switch(h[0]){
     case "k": if(h[1]) return viewJoin(h[1]); break;
@@ -433,10 +441,11 @@ const cardStore={
   drop(slug){ const a=this.all(); delete a[slug]; store.set("cards",a); }
 };
 async function viewJoin(slug){
-  slug=slug.toLowerCase(); loading("Načítám kartu…");
+  slug=slug.toLowerCase(); loading("Načítám kartu…"); const my=routeSeq;
   const mine=cardStore.all()[slug];
   if(mine) return showCard(mine,slug);
-  let b; try{ b=await rpc("public_business",{p_slug:slug}); }catch(e){ return fail(say(e)); }
+  let b; try{ b=await rpc("public_business",{p_slug:slug}); }catch(e){ return stale(my)||fail(say(e)); }
+  if(stale(my)) return;
   if(!b) return fail("Tento podnik ve Štemplu nenajdeme. Zkontrolujte QR kód.");
   document.title=b.name+" · Štempl";
   if(!b.active){
@@ -444,6 +453,13 @@ async function viewJoin(slug){
     return setAccent($("#jc"),b.accent);
   }
   app.innerHTML=`<div class="wrap narrow stack" style="padding-block:28px">
+    <div class="panel stack" style="gap:10px" id="backBox">
+      <b>Už jste tu kartu měli?</b>
+      <p class="small muted">Telefon ji mohl po delší době zapomenout (dělá to hlavně iPhone). Razítka nezmizela, kartu vám obnovíme.</p>
+      <form class="form" id="backForm" novalidate><div class="two" style="grid-template-columns:1fr auto"><input class="input" id="backEmail" type="email" autocomplete="email" placeholder="E-mail, který jste ke kartě dali" aria-label="E-mail ke kartě"><button class="btn primary" type="submit">Obnovit</button></div></form>
+      <div class="msg small" id="backOut" role="status"></div>
+      <p class="tiny muted">Nedali jste ke kartě e-mail? Řekněte obsluze své jméno, kartu vám najde.</p>
+    </div>
     <div class="lcard" id="jc"><div class="eyebrow">Věrnostní karta</div><div class="biz">${esc(b.name)}</div>
       <div class="rw"><span class="small muted">${b.stamps_needed} ${plural(b.stamps_needed,"razítko","razítka","razítek")}</span><span class="small"><b>${esc(b.reward_text)}</b></span></div>
       ${stampsGrid(0,b.stamps_needed,-1)}
@@ -452,14 +468,20 @@ async function viewJoin(slug){
       <h2 style="font-size:1.6rem">Získejte kartu zdarma</h2>
       <p class="muted small">Za každou návštěvu razítko, po ${b.stamps_needed}. ${esc(b.reward_text.toLowerCase())}. Nic se nestahuje a karta vám zůstane natrvalo.</p>
       <label class="field">Křestní jméno <small>nepovinné, ať vás obsluha pozná</small><input class="input" id="jName" autocomplete="given-name" maxlength="60"></label>
-      <label class="field">E-mail <small>nepovinné, doporučujeme: kartu pak obnovíte i na novém telefonu</small><input class="input" id="jEmail" type="email" autocomplete="email" maxlength="120"></label>
+      <label class="field">E-mail <small>doporučujeme – bez něj se karta při výměně telefonu nebo vymazání prohlížeče ztratí</small><input class="input" id="jEmail" type="email" autocomplete="email" maxlength="120"></label>
       <label class="check" id="consentRow" hidden><input type="checkbox" id="jConsent"><span>Souhlasím, aby ${esc(b.name)} uložil můj e-mail pro věrnostní program. Souhlas můžu kdykoli odvolat. <a href="#/soukromi">Ochrana údajů</a></span></label>
       <button class="btn accent big" type="submit">Získat kartu</button>
       <div class="msg err" id="jOut" role="status"></div>
-    </form>
-    <a class="btn ghost" href="#/obnovit/${esc(slug)}">Už kartu mám (nový telefon)</a></div>`;
+    </form></div>`;
   setAccent($("#jc"),b.accent); setAccent($("#joinForm"),b.accent);
   const em=$("#jEmail"); em.addEventListener("input",()=>{ $("#consentRow").hidden=!em.value.trim(); });
+  const recover=async(email,out)=>{
+    out.className="msg small";
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ out.className="msg small err"; out.textContent=ERR.bad_email; return; }
+    try{ await api("recover_card",{email,slug}); out.className="msg small ok"; out.textContent="Poslali jsme vám e-mail s odkazem na kartu. Otevřete ho v tomto telefonu (zkontrolujte i spam)."; }
+    catch(err){ out.className="msg small err"; out.textContent=say(err); }
+  };
+  $("#backForm").addEventListener("submit",e=>{ e.preventDefault(); recover($("#backEmail").value.trim(),$("#backOut")); });
   $("#joinForm").addEventListener("submit",async e=>{
     e.preventDefault(); const out=$("#jOut"); out.textContent="";
     const email=em.value.trim();
@@ -469,22 +491,29 @@ async function viewJoin(slug){
       const c=await rpc("join_card",{p_slug:slug,p_name:$("#jName").value.trim()||null,p_email:email||null,p_consent:!!$("#jConsent").checked});
       cardStore.put(slug,c.token);
       showCard(c.token,slug,c,true);
-    }catch(err){ out.textContent=say(err); btn.disabled=false; }
+    }catch(err){
+      btn.disabled=false;
+      if(err.message==="card_exists"){ await recover(email,out); out.textContent=ERR.card_exists+" "+out.textContent; return; }
+      out.textContent=say(err);
+    }
   });
 }
 async function viewCardToken(token){
-  token=String(token).toLowerCase().replace(/[^0-9a-f]/g,""); loading("Načítám kartu…");
-  let c; try{ c=await rpc("get_card",{p_token:token}); }catch(e){ return fail(say(e)); }
+  token=String(token).toLowerCase().replace(/[^0-9a-f]/g,""); loading("Načítám kartu…"); const my=routeSeq;
+  let c; try{ c=await rpc("get_card",{p_token:token}); }catch(e){ return stale(my)||fail(say(e)); }
+  if(stale(my)) return;
   if(!c) return fail("Karta nenalezena. Možná byla smazána.",`<a class="btn ghost" href="#/obnovit">Obnovit kartu e-mailem</a>`);
   cardStore.put(c.business.slug,token);
-  if(location.hash.indexOf("#/c/")===0) history.replaceState(null,"","#/k/"+c.business.slug);
   showCard(token,c.business.slug,c);
 }
 async function showCard(token,slug,pre,fresh){
-  let c=pre;
-  if(!c){ try{ c=await rpc("get_card",{p_token:token}); }catch(e){ return fail(say(e)); } }
+  let c=pre; const my=routeSeq;
+  if(!c){ try{ c=await rpc("get_card",{p_token:token}); }catch(e){ return stale(my)||fail(say(e)); } }
+  if(stale(my)) return;
   if(!c){ cardStore.drop(slug); return viewJoin(slug); }
   document.title=c.business.name+" · Štempl";
+  if(location.hash!=="#/c/"+token) history.replaceState(null,"","#/c/"+token);
+  setCardManifest(c.business.name,BASE+"#/c/"+token);
   let last=c;
   const link=BASE+"#/c/"+token;
   const render=(isNewStamp)=>{
@@ -494,9 +523,9 @@ async function showCard(token,slug,pre,fresh){
       <div class="lcard" id="lc">
         <div class="eyebrow">Věrnostní karta${last.name?" · "+esc(last.name):""}</div>
         <div class="biz">${esc(b.name)}</div>
-        <div class="rw"><span class="small muted">${Math.min(last.stamps,n)} z ${n}</span><span class="small"><b>${esc(b.reward_text)}</b></span></div>
+        <div class="rw"><span class="small muted">${Math.min(last.stamps,n)} z ${n}${last.stamps>n?" (+"+(last.stamps-n)+" navíc)":""}</span><span class="small"><b>${esc(b.reward_text)}</b></span></div>
         ${stampsGrid(last.stamps,n,isNewStamp?Math.min(last.stamps,n)-1:-1)}
-        ${last.reward_ready?`<div class="ready"><svg width="22" height="22" viewBox="0 0 100 100" style="color:#fff;flex:none"><use href="#mark"/></svg>Odměna čeká! Ukažte kartu obsluze.</div>`:`<p class="small muted" style="margin-top:14px">${left===1?"Poslední razítko a čeká vás":"Ještě "+left+" "+plural(left,"razítko","razítka","razítek")+" a čeká vás"} ${esc(b.reward_text.toLowerCase())}.</p>`}
+        ${last.reward_ready?`<div class="ready"><svg width="22" height="22" viewBox="0 0 100 100" style="color:currentColor;flex:none"><use href="#mark"/></svg>Odměna čeká! Ukažte kartu obsluze.</div>`:`<p class="small muted" style="margin-top:14px">${left===1?"Poslední razítko a čeká vás":"Ještě "+left+" "+plural(left,"razítko","razítka","razítek")+" a čeká vás"} ${esc(b.reward_text.toLowerCase())}.</p>`}
         <div class="qrbig"><div class="qr">${qrSVG(BASE+"#/r/"+token)}</div><div class="small muted">Ukažte obsluze k naskenování</div><div class="code">${short(token)}</div></div>
       </div>
       ${last.has_email?"":`<div class="panel stack" style="gap:10px"><b>Pojistěte si kartu</b><p class="small muted">Přidejte e-mail a kartu i s razítky obnovíte na novém telefonu nebo po smazání prohlížeče.</p>
@@ -547,6 +576,15 @@ async function showCard(token,slug,pre,fresh){
   };
   const iv=setInterval(tick,4000); onLeave(()=>clearInterval(iv));
 }
+/* "Add to home screen" from a card page must open that card, also on iPhone where the home-screen app has its own storage */
+function setCardManifest(name,url){
+  try{
+    const m={name:name+" – věrnostní karta",short_name:name.slice(0,12),start_url:url,scope:BASE,display:"standalone",background_color:"#f4efe6",theme_color:"#f4efe6",lang:"cs",
+      icons:[{src:BASE+"icon-192.png",sizes:"192x192",type:"image/png"},{src:BASE+"icon-512.png",sizes:"512x512",type:"image/png"}]};
+    let l=document.querySelector('link[rel="manifest"]'); if(!l){ l=document.createElement("link"); l.rel="manifest"; document.head.appendChild(l); }
+    l.href="data:application/manifest+json,"+encodeURIComponent(JSON.stringify(m));
+  }catch(e){}
+}
 function thanks(c,token){
   const b=c.business, url=b.google_review_url;
   openSheet(`<h2 id="sheetTitle" style="font-size:1.7rem">Díky za návštěvu!</h2>
@@ -562,7 +600,7 @@ async function viewMyCards(){
   const all=cardStore.all(), slugs=Object.keys(all);
   app.innerHTML=`<div class="wrap narrow stack" style="padding-block:28px"><div><div class="eyebrow">Štempl</div><h1 style="font-size:2.2rem;margin-top:6px">Moje karty</h1></div><div id="myList" class="stack"><p class="muted">Načítám…</p></div><a class="btn ghost" href="#/obnovit">Obnovit kartu e-mailem</a></div>${foot()}`;
   if(!slugs.length){ $("#myList").innerHTML=`<p class="muted">V tomto prohlížeči zatím nemáte žádnou kartu. Naskenujte QR kód v podniku, nebo si kartu obnovte e-mailem.</p>`; return; }
-  const rows=await Promise.all(slugs.map(s=>rpc("get_card",{p_token:all[s]}).catch(()=>null)));
+  const my=routeSeq; const rows=await Promise.all(slugs.map(s=>rpc("get_card",{p_token:all[s]}).catch(()=>null))); if(stale(my)) return;
   $("#myList").innerHTML=rows.map((c,i)=>c?`<a class="lcard" style="text-decoration:none;--accent:${esc(c.business.accent)}" href="#/k/${esc(c.business.slug)}"><div class="eyebrow">Věrnostní karta</div><div class="biz">${esc(c.business.name)}</div><p class="small muted" style="margin-top:8px">${Math.min(c.stamps,c.business.stamps_needed)} z ${c.business.stamps_needed} razítek${c.reward_ready?" · odměna čeká":""}</p></a>`:"").join("")||`<p class="muted">Karty se nepodařilo načíst.</p>`;
 }
 function viewRecover(slug){
@@ -619,21 +657,26 @@ function staffCardPanel(host,s,cur,opts){
       <div class="kv"><div><b>${cur.total_stamps}</b><span>návštěv celkem</span></div><div><b>${Math.min(cur.stamps,n)}/${n}</b><span>na kartě</span></div><div><b>${cur.rewards_redeemed}</b><span>vydaných odměn</span></div></div>
       <p class="small muted">Karta od ${fmtD(cur.created_at)} · poslední návštěva ${cur.last_stamp_at?fmtDT(cur.last_stamp_at):"zatím žádná"}</p>
       ${cur.reward_ready?`<button class="btn accent big" id="redeemBtn" type="button">Vydat odměnu: ${esc(b.reward_text)}</button>`:""}
-      <button class="btn ${cur.reward_ready?"":"accent"} big" id="stampBtn" type="button"${b.active===false?" disabled":""}>Přidat razítko</button>
-      ${canUndo?`<button class="btn ghost" id="undoBtn" type="button">Vrátit poslední razítko</button>`:""}
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px">
+        <button class="btn ${cur.reward_ready?"":"accent"} big" id="stampBtn" type="button"${b.active===false?" disabled":""}>Přidat razítko</button>
+        <button class="btn big" id="stamp2Btn" type="button" style="width:auto;padding:0 18px"${b.active===false?" disabled":""} aria-label="Přidat 2 razítka">+2</button>
+      </div>
+      ${canUndo?`<button class="btn ghost" id="undoBtn" type="button">Vrátit poslední přidání</button>`:""}
       ${opts.next?`<button class="btn ghost" id="nextBtn" type="button">Další zákazník</button>`:""}
       <div class="msg err" id="rcOut" role="status"></div></div>`;
     setAccent($("#rc",host),b.accent);
     $("#stampBtn",host).addEventListener("click",()=>act("stamp_card"));
+    $("#stamp2Btn",host).addEventListener("click",()=>act("stamp_card",2));
     if(cur.reward_ready) $("#redeemBtn",host).addEventListener("click",()=>act("redeem_reward"));
     if(canUndo) $("#undoBtn",host).addEventListener("click",()=>act("undo_stamp"));
     if(opts.next) $("#nextBtn",host).addEventListener("click",opts.next);
   };
-  async function act(fn){
+  async function act(fn,count){
     $$("button",host).forEach(b=>b.disabled=true);
     try{
-      cur=await rpc(fn,{p_slug:s.slug,p_code:s.code,p_token:cur.token});
-      const what={stamp_card:"Razítko přidáno",redeem_reward:"Odměna vydána",undo_stamp:"Razítko vráceno"}[fn];
+      const args={p_slug:s.slug,p_code:s.code,p_token:cur.token}; if(count) args.p_count=count;
+      cur=await rpc(fn,args);
+      const what=fn==="stamp_card"?(count>1?count+" razítka přidána":"Razítko přidáno"):fn==="redeem_reward"?"Odměna vydána":((cur.undone||1)>1?"Razítka vrácena":"Razítko vráceno");
       host.innerHTML=`<div class="done"><svg viewBox="0 0 100 100"><use href="#mark"/></svg><b style="font-size:1.4rem">${what}</b><span>${Math.min(cur.stamps,cur.business.stamps_needed)} z ${cur.business.stamps_needed} · ${visits(cur.total_stamps)}${cur.reward_ready?" · odměna připravená":""}</span></div>
         <div class="row-btns" style="margin-top:12px"><button class="btn ghost" type="button" id="backCard">Zpět na kartu</button>${opts.next?`<button class="btn primary" type="button" id="nextAfter">Další zákazník</button>`:""}</div>
         ${opts.next?"":`<p class="small muted" style="margin-top:10px">Dalšího zákazníka naskenujte znovu fotoaparátem.</p>`}`;
@@ -649,14 +692,34 @@ function staffCardPanel(host,s,cur,opts){
 async function viewScanTarget(token){
   token=String(token).toLowerCase().replace(/[^0-9a-f]/g,"");
   const s=sess.get();
-  if(!s) return viewCardToken(token);
-  loading("Načítám kartu zákazníka…");
+  if(!s){
+    if(Object.values(cardStore.all()).includes(token)) return viewCardToken(token);   // the customer's own phone
+    document.title="Karta zákazníka · Štempl";
+    app.innerHTML=`<div class="wrap narrow stack" style="padding-block:28px">
+      <div><div class="eyebrow">QR kód věrnostní karty</div><h1 style="font-size:2rem;margin-top:8px">Jste obsluha?</h1><p class="muted" style="margin-top:8px">Přihlaste se a hned můžete přidat razítko. Přihlášení vydrží, příště už se ptát nebudeme.</p></div>
+      <form class="form panel" id="qLogin" novalidate>
+        <label class="field">Adresa podniku<input class="input" id="qSlug" autocapitalize="off" autocomplete="username" required></label>
+        <label class="field">Kód obsluhy<input class="input mono" id="qCode" autocapitalize="characters" autocomplete="current-password" maxlength="12" required></label>
+        <button class="btn primary big" type="submit">Přihlásit a otevřít kartu</button>
+        <div class="msg err" id="qOut" role="status"></div>
+      </form>
+      <a class="btn ghost" href="#/c/${esc(token)}">Jsem zákazník – otevřít moji kartu</a></div>`;
+    $("#qLogin").addEventListener("submit",async e=>{
+      e.preventDefault(); const out=$("#qOut"); out.textContent=""; const slug=$("#qSlug").value.trim().toLowerCase(), code=$("#qCode").value.trim().toUpperCase();
+      try{ const b=await rpc("staff_login",{p_slug:slug,p_code:code}); sess.set({slug,code,name:b.name,role:b.role}); viewScanTarget(token); }
+      catch(err){ out.textContent=say(err); }
+    });
+    return;
+  }
+  loading("Načítám kartu zákazníka…"); const my=routeSeq;
   let c; try{ c=await rpc("lookup_card",{p_slug:s.slug,p_code:s.code,p_token:token}); }
   catch(e){
+    if(stale(my)) return;
     if(authFail(e)) return;
     if(e.message==="wrong_business") return fail("Tahle karta patří jinému podniku.",`<a class="btn ghost" href="#/c/${esc(token)}">Otevřít jako zákazník</a>`);
     return fail(say(e));
   }
+  if(stale(my)) return;
   document.title="Obsluha · "+s.name;
   app.innerHTML=`<div class="wrap narrow stack" style="padding-block:18px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div class="eyebrow">Obsluha</div><b>${esc(s.name)}</b></div><a class="btn ghost sm" href="#/obsluha">Obsluha</a></div><div id="res"></div></div>`;
   staffCardPanel($("#res"),s,c);
@@ -674,8 +737,8 @@ function viewStaff(){
     <div id="res"></div>
     <div class="panel stack" style="gap:12px">
       <b>Zákazník nemá QR po ruce?</b>
-      <form class="form" id="manual" novalidate><div class="two" style="grid-template-columns:1fr auto"><input class="input mono" id="mCode" placeholder="Kód karty, např. 3F9A2C1B" maxlength="80" autocapitalize="characters" aria-label="Kód karty"><button class="btn primary" type="submit">Najít</button></div></form>
-      <form class="form" id="byEmail" novalidate><div class="two" style="grid-template-columns:1fr auto"><input class="input" id="mEmail" type="email" placeholder="E-mail zákazníka (nový telefon)" aria-label="E-mail zákazníka"><button class="btn" type="submit">Najít</button></div></form>
+      <form class="form" id="manual" novalidate><div class="two" style="grid-template-columns:1fr auto"><input class="input" id="mCode" type="search" placeholder="Jméno, kód karty nebo e-mail" maxlength="120" autocomplete="off" aria-label="Hledat zákazníka"><button class="btn primary" type="submit">Najít</button></div></form>
+      <ul class="clist" id="found"></ul>
       <div class="msg err" id="stOut" role="status"></div>
     </div>
     ${s.role==="owner"?`<a class="btn ghost" href="#/prehled">Přehled podniku</a>`:""}
@@ -710,25 +773,31 @@ function viewStaff(){
     };
     loop();
   }
-  async function find(args,viaEmail){
-    $("#stOut").textContent="";
+  async function find(args,showRestore){
+    $("#stOut").textContent=""; $("#found").innerHTML="";
     try{
-      const c=viaEmail?await rpc("find_card_by_email",{p_slug:s.slug,p_code:s.code,p_email:args.email})
-        :args.p_token?await rpc("lookup_card",{p_slug:s.slug,p_code:s.code,p_token:args.p_token})
-        :await rpc("lookup_card_short",{p_slug:s.slug,p_code:s.code,p_short:args.p_short});
+      const c=await rpc("lookup_card",{p_slug:s.slug,p_code:s.code,p_token:args.p_token});
       $("#scanArea").innerHTML="";
       staffCardPanel($("#res"),s,c,{next:reset});
-      if(viaEmail){
+      if(showRestore){
         const restore=document.createElement("div"); restore.className="panel stack"; restore.style.gap="10px"; restore.style.marginTop="14px";
-        restore.innerHTML=`<b>Obnovit kartu zákazníkovi</b><p class="small muted">Ať zákazník naskenuje tento kód svým telefonem. Karta se mu otevře i s razítky.</p><div class="qr" style="width:200px;aspect-ratio:1;justify-self:center">${qrSVG(BASE+"#/c/"+c.token)}</div>`;
+        restore.innerHTML=`<b>Zákazník nemá kartu v telefonu?</b><p class="small muted">Ať naskenuje tento kód svým fotoaparátem. Karta se mu otevře i s razítky.</p><div class="qr" style="width:200px;aspect-ratio:1;justify-self:center">${qrSVG(BASE+"#/c/"+c.token)}</div>`;
         $("#res").appendChild(restore);
       }
       $("#res").scrollIntoView({behavior:"smooth",block:"start"});
     }catch(e){ if(authFail(e)) return; $("#stOut").textContent=say(e); busy=false; idle(); }
   }
-  function reset(){ busy=false; $("#res").innerHTML=""; $("#mCode").value=""; $("#mEmail").value=""; idle(); window.scrollTo(0,0); }
-  $("#manual").addEventListener("submit",e=>{ e.preventDefault(); const v=$("#mCode").value.trim(); if(!v) return; stop(); const m=v.toLowerCase().match(/[0-9a-f]{32}/); const hex=v.toLowerCase().replace(/[^0-9a-f]/g,""); find(m?{p_token:m[0]}:{p_short:hex}); });
-  $("#byEmail").addEventListener("submit",e=>{ e.preventDefault(); const v=$("#mEmail").value.trim(); if(!v) return; stop(); find({email:v},true); });
+  function reset(){ busy=false; $("#res").innerHTML=""; $("#found").innerHTML=""; $("#mCode").value=""; idle(); window.scrollTo(0,0); }
+  $("#manual").addEventListener("submit",async e=>{
+    e.preventDefault(); const v=$("#mCode").value.trim(); if(!v) return; stop(); $("#stOut").textContent="";
+    const m=v.toLowerCase().match(/[0-9a-f]{32}/); if(m) return find({p_token:m[0]},true);
+    try{
+      const list=await rpc("staff_find",{p_slug:s.slug,p_code:s.code,p_query:v});
+      if(list.length===1) return find({p_token:list[0].token},true);
+      $("#found").innerHTML=list.length?list.map((c,i)=>`<li><button type="button" data-i="${i}"><span class="nm">${c.name?esc(c.name):'<span class="mono">'+esc(c.code)+'</span>'}</span><span class="vs">${c.total_stamps}</span><span class="sub"><span class="mono">${esc(c.code)}</span> · ${c.stamps} na kartě${c.email_hint?" · "+esc(c.email_hint):""} · naposledy ${c.last_stamp_at?fmtD(c.last_stamp_at):"–"}</span></button></li>`).join(""):`<li class="small muted" style="padding:10px 4px">Nikoho jsme nenašli. Zkuste jiné jméno nebo kód z karty zákazníka.</li>`;
+      $$("#found button").forEach(x=>x.addEventListener("click",()=>find({p_token:list[+x.dataset.i].token},true)));
+    }catch(err){ if(authFail(err)) return; $("#stOut").textContent=say(err); }
+  });
   idle();
 }
 
@@ -752,8 +821,9 @@ async function viewOwner(tab){
   const s=sess.get();
   if(!s) return loginView("Přehled podniku",()=>viewOwner(tab),{owner:true});
   if(s.role==="staff") return fail("Přehled podniku je jen pro majitele. Jako obsluha můžete dávat razítka.",`<div class="row-btns"><a class="btn primary" href="#/obsluha">Obsluha</a><button class="btn ghost" type="button" id="relog">Přihlásit se jako majitel</button></div>`), $("#relog").addEventListener("click",logout);
-  loading("Načítám přehled…");
-  let st; try{ st=await rpc("owner_stats",{p_slug:s.slug,p_code:s.code}); }catch(e){ if(authFail(e)) return; return fail(say(e)); }
+  loading("Načítám přehled…"); const my=routeSeq;
+  let st; try{ st=await rpc("owner_stats",{p_slug:s.slug,p_code:s.code}); }catch(e){ if(stale(my)) return; if(authFail(e)) return; return fail(say(e)); }
+  if(stale(my)) return;
   const b=st.business, bl=st.billing; document.title="Přehled · "+b.name;
   const cardUrl=BASE+"#/k/"+b.slug, bt=billingText(bl);
   const paying=bl.status==="active"||bl.status==="trialing"||bl.status==="past_due";
@@ -826,7 +896,8 @@ async function viewOwner(tab){
       </div>
       <form class="form panel" id="ownerMail" novalidate>
         <b>E-mail majitele</b>
-        <p class="small muted">Na něj pošleme nový kód, když ho zapomenete.</p>
+        <p class="small muted">Na něj pošleme nový kód, když ho zapomenete, a v pondělí krátký souhrn týdne.</p>
+        <label class="check"><input type="checkbox" id="oSummary"${b.weekly_summary!==false?" checked":""}><span>Posílat týdenní souhrn (razítka, noví zákazníci, recenze)</span></label>
         <input class="input" id="oMail" type="email" value="${esc(b.owner_email||"")}" autocomplete="email" placeholder="majitel@podnik.cz">
         <button class="btn" type="submit">Uložit e-mail</button><div class="msg" id="oOut" role="status"></div>
       </form>
@@ -899,6 +970,11 @@ async function viewOwner(tab){
       $("#newStaff").textContent="Vygenerovat nový kód obsluhy";
     }catch(e){ $("#staffCodeBox").innerHTML=`<p class="msg err">${esc(say(e))}</p>`; }
   });
+  $("#oSummary").addEventListener("change",async e=>{
+    const out=$("#oOut"); out.className="msg";
+    try{ await rpc("owner_set_summary",{p_slug:s.slug,p_code:s.code,p_on:e.target.checked}); out.className="msg ok"; out.textContent=e.target.checked?"Souhrn zapnutý.":"Souhrn vypnutý."; }
+    catch(err){ out.className="msg err"; out.textContent=say(err); }
+  });
   $("#ownerMail").addEventListener("submit",async e=>{
     e.preventDefault(); const out=$("#oOut"); out.className="msg";
     try{ await rpc("owner_set_email",{p_slug:s.slug,p_code:s.code,p_email:$("#oMail").value.trim()}); out.className="msg ok"; out.textContent="Uloženo."; }
@@ -908,25 +984,25 @@ async function viewOwner(tab){
 }
 async function drawPoster(b,url){
   const c=$("#poster"); if(!c) return; const x=c.getContext("2d"), W=c.width, H=c.height;
-  try{ await document.fonts.load("800 110px 'Inter Display'"); await document.fonts.ready; }catch(e){}
+  try{ await document.fonts.ready; }catch(e){}
   x.fillStyle="#f4efe6"; x.fillRect(0,0,W,H);
   x.fillStyle=b.accent; x.fillRect(0,0,W,40);
   x.fillStyle="#1c1a17"; x.textAlign="center";
-  x.font="600 44px Inter, Arial"; x.fillText("VĚRNOSTNÍ KARTA", W/2, 170);
-  x.font="800 110px 'Inter Display', Arial";
+  x.font="600 44px system-ui, Arial"; x.fillText("VĚRNOSTNÍ KARTA", W/2, 170);
+  x.font="800 110px system-ui, Arial";
   const words=b.name.split(" "); let line="", y=300; const lines=[];
   words.forEach(w=>{ const t=line?line+" "+w:w; if(x.measureText(t).width>W-160&&line){ lines.push(line); line=w; } else line=t; }); lines.push(line);
   lines.slice(0,2).forEach((l,i)=>x.fillText(l,W/2,y+i*120));
   y+=(Math.min(lines.length,2)-1)*120+110;
-  x.font="400 54px Inter, Arial"; x.fillStyle="#6e675d";
+  x.font="400 54px system-ui, Arial"; x.fillStyle="#6e675d";
   x.fillText(`${b.stamps_needed} razítek = ${b.reward_text}`, W/2, y);
   const size=760, qx=(W-size)/2, qy=y+70;
   x.fillStyle="#fff"; x.fillRect(qx-30,qy-30,size+60,size+60);
   if(window.StemplQR){ const q=window.StemplQR(url,"M"); const n=q.n, cs=size/n; x.fillStyle="#111";
     for(let r=0;r<n;r++) for(let k=0;k<n;k++) if(q.dark(r,k)) x.fillRect(qx+k*cs,qy+r*cs,Math.ceil(cs),Math.ceil(cs)); }
-  x.fillStyle="#1c1a17"; x.font="800 70px 'Inter Display', Arial"; x.fillText("Naskenujte fotoaparátem", W/2, qy+size+150);
-  x.font="400 46px Inter, Arial"; x.fillStyle="#6e675d"; x.fillText("Karta je zdarma a nic se nestahuje.", W/2, qy+size+225);
-  x.font="600 38px Inter, Arial"; x.fillStyle=b.accent; x.fillText("Štempl", W/2, H-80);
+  x.fillStyle="#1c1a17"; x.font="800 70px system-ui, Arial"; x.fillText("Naskenujte fotoaparátem", W/2, qy+size+150);
+  x.font="400 46px system-ui, Arial"; x.fillStyle="#6e675d"; x.fillText("Karta je zdarma a nic se nestahuje.", W/2, qy+size+225);
+  x.font="600 38px system-ui, Arial"; x.fillStyle=b.accent; x.fillText("Štempl", W/2, H-80);
   try{ $("#dl").href=c.toDataURL("image/png"); }catch(e){}
 }
 
@@ -1100,7 +1176,7 @@ async function adminDash(key){
         return `<tr><td><b>${esc(b.name)}</b><div class="tiny muted mono">${esc(b.slug)}</div><div class="tiny muted">${esc(b.owner_email||"bez e-mailu")}${b.phone?" · "+esc(b.phone):""}</div>${b.has_review_url?"":'<div><span class="pill warn">chybí odkaz na recenze</span></div>'}</td>
           <td>${status(b.billing)}</td><td>${b.customers}</td><td>${b.stamps_30d}</td>
           <td>${b.last_activity?fmtD(b.last_activity):"–"}${idle?' <span class="pill warn">14+ dní nic</span>':""}</td>
-          <td><div class="row-btns"><button class="btn sm ghost" data-a="trial" data-s="${esc(b.slug)}">+14 dní</button><button class="btn sm ghost" data-a="comp" data-s="${esc(b.slug)}" data-v="${b.billing.comp?"0":"1"}">${b.billing.comp?"Zrušit zdarma":"Dát zdarma"}</button><button class="btn sm ghost" data-a="code" data-s="${esc(b.slug)}">Nový kód majitele</button></div></td></tr>`; }).join("")||'<tr><td colspan="6" class="muted">Zatím žádné podniky.</td></tr>'}
+          <td><div class="row-btns"><button class="btn sm ghost" data-a="trial" data-s="${esc(b.slug)}">+14 dní</button><button class="btn sm ghost" data-a="comp" data-s="${esc(b.slug)}" data-v="${b.billing.comp?"0":"1"}">${b.billing.comp?"Zrušit zdarma":"Dát zdarma"}</button><button class="btn sm ghost" data-a="code" data-s="${esc(b.slug)}">Nový kód majitele</button><button class="btn sm danger" data-a="del" data-s="${esc(b.slug)}">Smazat</button></div></td></tr>`; }).join("")||'<tr><td colspan="6" class="muted">Zatím žádné podniky.</td></tr>'}
     </tbody></table><div class="msg" id="adOut" role="status"></div></div>
     <div class="panel"><b>Poptávky z webu</b><ul class="feed" style="margin-top:8px">${(d.leads||[]).map(l=>`<li><span><b>${esc(l.business)}</b> · ${esc(l.name)} · ${esc(l.contact)}${l.message?'<br><span class="small muted">'+esc(l.message)+'</span>':""}</span><span class="muted">${fmtD(l.created_at)}</span></li>`).join("")||'<li class="muted">Zatím žádné.</li>'}</ul></div>
   </div>`;
@@ -1110,6 +1186,14 @@ async function adminDash(key){
     try{
       if(a==="trial") await rpc("admin_set_billing",{p_installer_key:key,p_slug:slug,p_comp:null,p_trial_days:14});
       if(a==="comp") await rpc("admin_set_billing",{p_installer_key:key,p_slug:slug,p_comp:btn.dataset.v==="1",p_trial_days:null});
+      if(a==="del"){
+        const typed=prompt("Smazat podnik "+slug+" i se všemi kartami zákazníků? Nejde to vrátit.\nPro potvrzení napište adresu podniku:");
+        if(typed===null) return;
+        const r=await rpc("admin_delete_business",{p_installer_key:key,p_slug:slug,p_confirm:typed});
+        await adminDash(key);
+        $("#adOut").className="msg ok"; $("#adOut").textContent="Podnik "+r.deleted+" smazán ("+r.cards+" karet)."+(r.subscription_to_cancel?" Pozor: má aktivní předplatné "+r.subscription_to_cancel+", zrušte ho ve Stripe.":"");
+        return;
+      }
       if(a==="code"){ if(!confirm("Vygenerovat nový kód majitele pro "+slug+"? Starý přestane platit.")) return;
         const r=await rpc("reset_business_code",{p_installer_key:key,p_slug:slug});
         openSheet(`<h2 id="sheetTitle" style="font-size:1.5rem">Nový kód majitele</h2><p class="muted">${esc(r.name)} (${esc(r.slug)})</p><div class="bigcode">${esc(r.code)}</div><button class="btn ghost" id="cx" type="button">Zavřít</button>`); $("#cx").addEventListener("click",()=>{ closeSheet(); }); return; }
@@ -1168,6 +1252,12 @@ function viewNew(){
   });
 }
 
+let hiddenAt=0;
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){ hiddenAt=Date.now(); return; }
+  if(hiddenAt&&Date.now()-hiddenAt>15000&&/^#\/(r|obsluha)/.test(location.hash)&&!$("#sheet").classList.contains("on")) route();
+});
+addEventListener("pageshow",e=>{ if(e.persisted) route(); });
 if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 route();
 })();
