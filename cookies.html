@@ -7,19 +7,16 @@
 <title>Zásady cookies · Štempl</title>
 <link rel="icon" href="icon-192.png" type="image/png">
 <style>
-@font-face{font-family:"Inter";src:url(fonts/inter-400.woff) format("woff");font-weight:400;font-display:swap}
-@font-face{font-family:"Inter";src:url(fonts/inter-600.woff) format("woff");font-weight:600;font-display:swap}
-@font-face{font-family:"Inter Display";src:url(fonts/interdisplay-800.woff) format("woff");font-weight:800;font-display:swap}
 :root{--paper:#f4efe6;--card:#fffdf8;--ink:#1c1a17;--muted:#6e675d;--line:rgba(28,26,23,.12);--brand:#d9480f}
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 1rem/1.6 "Inter","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 1rem/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
 .wrap{max-width:760px;margin:0 auto;padding:32px 16px 60px}
 a{color:inherit}
-h1,h2{font-family:"Inter Display","Inter",Arial,sans-serif;font-weight:800;letter-spacing:-.025em;line-height:1.1}
+h1,h2{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-weight:800;letter-spacing:-.025em;line-height:1.1}
 h1{font-size:2.3rem;margin:8px 0 18px} h2{font-size:1.35rem;margin:30px 0 8px}
 p,li{color:#3a352f}
 .eyebrow{font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.logo{display:inline-flex;align-items:center;gap:8px;font:800 1.25rem/1 "Inter Display",Arial,sans-serif;text-decoration:none;color:var(--ink)}
+.logo{display:inline-flex;align-items:center;gap:8px;font:800 1.25rem/1 system-ui,Arial,sans-serif;text-decoration:none;color:var(--ink)}
 .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin-top:18px}
 .scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
@@ -50,7 +47,7 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em;backgroun
         <tr><td><code>stempl.staff</code></td><td>Přihlášení obsluhy nebo majitele podniku (adresa a kód podniku). Jen na zařízeních zaměstnanců.</td><td>Do odhlášení</td><td>Nezbytné</td></tr>
         <tr><td><code>stempl.ikey</code></td><td>Přihlášení provozovatele do správy, jen pokud zvolí „zapamatovat“.</td><td>Do odhlášení</td><td>Nezbytné</td></tr>
         <tr><td><code>stempl.cookieok</code></td><td>Že jste zavřeli informační lištu o cookies, aby se neukazovala pořád.</td><td>Trvale</td><td>Nezbytné</td></tr>
-        <tr><td>Mezipaměť aplikace (service worker)</td><td>Uloží soubory aplikace (stránku, písma, ikony), aby se karta rychle načetla i při slabém signálu. Neobsahuje osobní údaje.</td><td>Do další aktualizace aplikace</td><td>Nezbytné</td></tr>
+        <tr><td>Mezipaměť aplikace (service worker)</td><td>Uloží soubory aplikace (stránku a ikony), aby se karta rychle načetla i při slabém signálu. Neobsahuje osobní údaje.</td><td>Do další aktualizace aplikace</td><td>Nezbytné</td></tr>
       </tbody>
     </table>
   </div>
@@ -60,7 +57,7 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em;backgroun
   <p>Podle § 89 odst. 3 zákona č. 127/2005 Sb., o elektronických komunikacích, a směrnice ePrivacy se souhlas nevyžaduje u ukládání, které je nezbytné k poskytnutí služby, o kterou jste sami požádali. Všechny záznamy výše jsou právě takové: bez nich by karta ani přihlášení obsluhy nefungovaly.</p>
 
   <h2>Služby třetích stran</h2>
-  <p>Písma i knihovny (například generátor QR kódů) jsou uložené přímo na našem webu, takže se při načtení stránky nic nestahuje z Googlu ani jiných služeb. Komunikujeme jen s naším serverem (Supabase, EU). Když sami kliknete na odkaz pro recenzi na Googlu nebo podnik otevře platební stránku Stripe, platí na těchto stránkách zásady cookies Googlu a Stripe.</p>
+  <p>Aplikace používá písma vašeho telefonu a knihovny (například generátor QR kódů) jsou uložené přímo na našem webu, takže se při načtení stránky nic nestahuje z Googlu ani jiných služeb. Komunikujeme jen s naším serverem (Supabase, EU). Když sami kliknete na odkaz pro recenzi na Googlu nebo podnik otevře platební stránku Stripe, platí na těchto stránkách zásady cookies Googlu a Stripe.</p>
 
   <h2>Jak úložiště smazat</h2>
   <ul>
