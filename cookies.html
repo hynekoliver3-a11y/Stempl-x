@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f4efe6">
+<meta name="theme-color" content="#f5f2ea">
 <title>Zásady cookies · Štempl</title>
 <link rel="icon" href="icon-192.png" type="image/png">
 <style>
-:root{--paper:#f4efe6;--card:#fffdf8;--ink:#1c1a17;--muted:#6e675d;--line:rgba(28,26,23,.12);--brand:#d9480f}
+:root{--paper:#f5f2ea;--card:#fffdf8;--ink:#1c1a17;--muted:#6e675d;--line:rgba(28,26,23,.12);--brand:#d9480f}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:400 1rem/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
 .wrap{max-width:760px;margin:0 auto;padding:32px 16px 60px}
@@ -68,16 +68,9 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em;backgroun
   <p class="small muted">Pozor: smazáním dat v prohlížeči se karta nesmaže z našeho serveru, jen ji tento telefon „zapomene“. Pro úplné smazání použijte tlačítko na kartě.</p>
 
   <h2>Kontakt</h2>
-  <p>Provozovatel: Oliver Hynek, Brno, e-mail <a href="mailto:hynekoliver3@gmail.com">hynekoliver3@gmail.com</a>. Více o osobních údajích najdete v <a href="./#/soukromi">zásadách ochrany osobních údajů</a>.</p>
+  <p>Provozovatel: Oliver Hynek, Brno, e-mail <a href="mailto:stemplapp@gmail.com">stemplapp@gmail.com</a>. Více o osobních údajích najdete v <a href="./#/soukromi">zásadách ochrany osobních údajů</a>.</p>
   <p style="margin-top:30px"><a class="btn" href="./#/">Zpět do aplikace</a></p>
 </div>
-<script>
-document.getElementById("clear").addEventListener("click",async function(){
-  try{ Object.keys(localStorage).filter(function(k){return k.indexOf("stempl.")===0}).forEach(function(k){localStorage.removeItem(k)}); }catch(e){}
-  try{ if(window.caches){ var ks=await caches.keys(); await Promise.all(ks.map(function(k){return caches.delete(k)})); } }catch(e){}
-  try{ if(navigator.serviceWorker){ var rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(function(r){return r.unregister()})); } }catch(e){}
-  document.getElementById("out").textContent="Hotovo, data Štemplu v tomto prohlížeči jsou smazaná.";
-});
-</script>
+<script src="cookies.js"></script>
 </body>
 </html>
